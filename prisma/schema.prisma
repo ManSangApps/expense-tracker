@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ExpenseCategory {
+  RENT
+  GROCERIES
+  UTILITIES
+  TRAVEL
+  DINING
+  SHOPPING
+  ENTERTAINMENT
+  HEALTH
+  MISC
+}
+
+enum PaidBy {
+  PARTNER1
+  PARTNER2
+}
+
+enum SplitType {
+  EQUAL
+  FULL
+  CUSTOM
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         PaidBy    @unique
+  expenses     Expense[]
+  budgets      Budget[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Expense {
+  id                String          @id @default(cuid())
+  amount            Decimal         @db.Decimal(10, 2)
+  category          ExpenseCategory
+  description       String
+  date              DateTime
+  paidBy            PaidBy
+  splitType         SplitType
+  customSplitAmount Decimal?        @db.Decimal(10, 2)
+  isShared          Boolean         @default(true)
+  isRecurring       Boolean         @default(false)
+  recurringRule     String?
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([date])
+  @@index([category, paidBy])
+}
+
+model Budget {
+  id        String   @id @default(cuid())
+  month     String
+  amount    Decimal  @db.Decimal(10, 2)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([month, userId])
+}
